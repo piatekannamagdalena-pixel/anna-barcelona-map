@@ -3,14 +3,16 @@
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { restaurants } from "@/data/restaurants";
+import type { Place } from "@/data/places";
 
 type BarcelonaMapProps = {
-  selectedRestaurantId: string;
+  places: Place[];
+  selectedPlaceId: string;
 };
 
 export default function BarcelonaMap({
-  selectedRestaurantId,
+  places,
+  selectedPlaceId,
 }: BarcelonaMapProps) {
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -31,17 +33,27 @@ export default function BarcelonaMap({
 
     mapRef.current = map;
 
-    restaurants.forEach((restaurant) => {
+    return () => map.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    Object.values(markersRef.current).forEach((marker) => marker.remove());
+    markersRef.current = {};
+    popupsRef.current = {};
+
+    places.forEach((place) => {
       const popup = new mapboxgl.Popup({ offset: 24 }).setHTML(`
         <div style="font-family: sans-serif; max-width: 220px;">
           <h3 style="font-size: 16px; margin: 0 0 6px; font-weight: 700;">
-            ${restaurant.name}
+            ${place.name}
           </h3>
           <p style="margin: 0 0 6px; color: #555;">
-            ${restaurant.neighborhood} · ${restaurant.price}
+            ${place.neighborhood} · ${place.price}
           </p>
           <p style="margin: 0; color: #333;">
-            ${restaurant.description}
+            ${place.description}
           </p>
         </div>
       `);
@@ -56,27 +68,23 @@ export default function BarcelonaMap({
       marker.style.cursor = "pointer";
       marker.style.transition = "all 0.2s ease";
 
-      markersRef.current[restaurant.id] = marker;
-      popupsRef.current[restaurant.id] = popup;
+      markersRef.current[place.id] = marker;
+      popupsRef.current[place.id] = popup;
 
       new mapboxgl.Marker(marker)
-        .setLngLat([restaurant.lng, restaurant.lat])
+        .setLngLat([place.lng, place.lat])
         .setPopup(popup)
-        .addTo(map);
+        .addTo(mapRef.current!);
     });
-
-    return () => map.remove();
-  }, []);
+  }, [places]);
 
   useEffect(() => {
-    const selectedRestaurant = restaurants.find(
-      (restaurant) => restaurant.id === selectedRestaurantId
-    );
+    const selectedPlace = places.find((place) => place.id === selectedPlaceId);
 
-    if (!selectedRestaurant || !mapRef.current) return;
+    if (!selectedPlace || !mapRef.current) return;
 
     Object.entries(markersRef.current).forEach(([id, marker]) => {
-      const isSelected = id === selectedRestaurantId;
+      const isSelected = id === selectedPlaceId;
 
       marker.style.width = isSelected ? "28px" : "18px";
       marker.style.height = isSelected ? "28px" : "18px";
@@ -85,19 +93,19 @@ export default function BarcelonaMap({
     });
 
     mapRef.current.flyTo({
-      center: [selectedRestaurant.lng, selectedRestaurant.lat],
+      center: [selectedPlace.lng, selectedPlace.lat],
       zoom: 14,
       duration: 900,
     });
 
-    const popup = popupsRef.current[selectedRestaurantId];
+    const popup = popupsRef.current[selectedPlaceId];
 
     if (popup) {
       popup
-        .setLngLat([selectedRestaurant.lng, selectedRestaurant.lat])
+        .setLngLat([selectedPlace.lng, selectedPlace.lat])
         .addTo(mapRef.current);
     }
-  }, [selectedRestaurantId]);
+  }, [selectedPlaceId, places]);
 
   return <div ref={mapContainer} className="h-full w-full" />;
 }

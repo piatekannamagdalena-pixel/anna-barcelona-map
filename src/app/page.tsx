@@ -2,31 +2,48 @@
 
 import { useState } from "react";
 import BarcelonaMap from "@/components/BarcelonaMap";
-import { restaurants } from "@/data/restaurants";
+import { places } from "@/data/places";
 
 export default function Home() {
   const categories = [
+    "All",
     "Restaurants",
-    "Coffee and bakeries",
-    "Pilates, dance and wellness",
-    "Museums and culture",
-    "Shops and design",
-    "Walks and areas",
+    "Brunch & Cafés",
+    "Desserts & Bakeries",
+    "Wine & Cocktail Bars",
+    "Wellness & Dance",
+    "Shops & Design",
+    "Walks & Areas",
   ];
 
-  const [selectedCategory, setSelectedCategory] = useState("Restaurants");
-  const [selectedRestaurantId, setSelectedRestaurantId] = useState(
-    restaurants[0].id
-  );
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedPlaceId, setSelectedPlaceId] = useState(places[0].id);
 
-  const selectedRestaurant = restaurants.find(
-    (restaurant) => restaurant.id === selectedRestaurantId
-  );
+  const filteredPlaces =
+    selectedCategory === "All"
+      ? places
+      : places.filter((place) => place.category === selectedCategory);
+
+  const selectedPlace =
+    filteredPlaces.find((place) => place.id === selectedPlaceId) ??
+    filteredPlaces[0];
+
+  function handleCategoryChange(category: string) {
+    setSelectedCategory(category);
+
+    const newFilteredPlaces =
+      category === "All"
+        ? places
+        : places.filter((place) => place.category === category);
+
+    if (newFilteredPlaces.length > 0) {
+      setSelectedPlaceId(newFilteredPlaces[0].id);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#F7F1E8] text-[#1F1F1F]">
       <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[360px_1fr_420px]">
-        {/* LEFT SIDEBAR */}
         <aside className="border-r border-black/10 p-5 lg:h-screen lg:overflow-y-auto">
           <nav className="mb-8 flex items-center justify-between">
             <div className="text-lg font-semibold">anna recommends</div>
@@ -41,7 +58,7 @@ export default function Home() {
 
           <select
             value={selectedCategory}
-            onChange={(event) => setSelectedCategory(event.target.value)}
+            onChange={(event) => handleCategoryChange(event.target.value)}
             className="mb-8 w-full rounded-full border border-black/10 bg-white px-5 py-3 text-sm outline-none"
           >
             {categories.map((category) => (
@@ -59,13 +76,13 @@ export default function Home() {
           </p>
 
           <div className="space-y-3">
-            {restaurants.map((restaurant) => {
-              const isSelected = restaurant.id === selectedRestaurantId;
+            {filteredPlaces.map((place) => {
+              const isSelected = place.id === selectedPlace?.id;
 
               return (
                 <article
-                  key={restaurant.id}
-                  onClick={() => setSelectedRestaurantId(restaurant.id)}
+                  key={place.id}
+                  onClick={() => setSelectedPlaceId(place.id)}
                   className={`cursor-pointer rounded-3xl p-5 ring-1 transition ${
                     isSelected
                       ? "bg-[#1F1F1F] text-white ring-black shadow-xl"
@@ -73,7 +90,8 @@ export default function Home() {
                   }`}
                 >
                   <div className="mb-2 flex items-center justify-between gap-3">
-                    <h2 className="text-lg font-semibold">{restaurant.name}</h2>
+                    <h2 className="text-lg font-semibold">{place.name}</h2>
+
                     <span
                       className={`rounded-full px-3 py-1 text-xs ${
                         isSelected
@@ -81,16 +99,16 @@ export default function Home() {
                           : "bg-[#1F1F1F] text-white"
                       }`}
                     >
-                      {restaurant.tags[0]}
+                      {place.tags[0]}
                     </span>
                   </div>
 
                   <p className="text-sm opacity-60">
-                    {restaurant.neighborhood} · {restaurant.price}
+                    {place.neighborhood} · {place.price}
                   </p>
 
                   <p className="mt-3 text-sm leading-6 opacity-80">
-                    {restaurant.description}
+                    {place.description}
                   </p>
                 </article>
               );
@@ -98,36 +116,39 @@ export default function Home() {
           </div>
         </aside>
 
-        {/* CENTER MAP */}
         <section className="h-[60vh] p-4 lg:h-screen">
           <div className="h-full overflow-hidden rounded-[2rem] border border-black/10 bg-white">
-            <BarcelonaMap selectedRestaurantId={selectedRestaurantId} />
+            <BarcelonaMap
+              places={filteredPlaces}
+              selectedPlaceId={selectedPlace?.id ?? ""}
+            />
           </div>
         </section>
 
-        {/* RIGHT DETAILS PANEL */}
-        {selectedRestaurant && (
+        {selectedPlace && (
           <aside className="border-l border-black/10 bg-white p-6 lg:h-screen lg:overflow-y-auto">
-            <div className="mb-6 h-56 rounded-[2rem] bg-[#EFE3D3]" />
+            <div className="mb-6 flex h-56 items-center justify-center rounded-[2rem] bg-[#EFE3D3] text-sm text-black/40">
+              Image coming soon
+            </div>
 
             <p className="mb-3 text-xs uppercase tracking-[0.3em] text-[#C47B4D]">
-              {selectedRestaurant.category}
+              {selectedPlace.category}
             </p>
 
             <h2 className="text-4xl font-semibold leading-tight">
-              {selectedRestaurant.name}
+              {selectedPlace.name}
             </h2>
 
             <p className="mt-2 text-sm text-black/50">
-              {selectedRestaurant.neighborhood}, Barcelona
+              {selectedPlace.neighborhood}, Barcelona
             </p>
 
             <div className="mt-5 flex flex-wrap gap-3 text-sm">
               <span>★ 4.7</span>
               <span>•</span>
-              <span>{selectedRestaurant.price}</span>
+              <span>{selectedPlace.price}</span>
               <span>•</span>
-              <span>{selectedRestaurant.tags.join(" · ")}</span>
+              <span>{selectedPlace.tags.join(" · ")}</span>
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -147,7 +168,7 @@ export default function Home() {
                 Why I love it
               </p>
               <p className="text-sm leading-7 text-black/70">
-                {selectedRestaurant.why}
+                {selectedPlace.why}
               </p>
             </section>
 
@@ -157,7 +178,7 @@ export default function Home() {
                   Best for
                 </p>
                 <p className="mt-2 text-sm">
-                  {selectedRestaurant.bestFor.join(", ")}
+                  {selectedPlace.bestFor.join(", ")}
                 </p>
               </div>
 
@@ -165,7 +186,7 @@ export default function Home() {
                 <p className="text-xs uppercase tracking-[0.2em] text-black/40">
                   Atmosphere
                 </p>
-                <p className="mt-2 text-sm">{selectedRestaurant.atmosphere}</p>
+                <p className="mt-2 text-sm">{selectedPlace.atmosphere}</p>
               </div>
 
               <div className="rounded-2xl border border-black/10 p-4">
@@ -173,7 +194,7 @@ export default function Home() {
                   Opening hours
                 </p>
                 <p className="mt-2 text-sm">
-                  {selectedRestaurant.openingHours}
+                  {selectedPlace.openingHours || "Check before visiting"}
                 </p>
               </div>
             </section>
@@ -184,9 +205,13 @@ export default function Home() {
               </p>
 
               <ul className="space-y-2 text-sm text-black/70">
-                {selectedRestaurant.goodToKnow.map((item) => (
-                  <li key={item}>✓ {item}</li>
-                ))}
+                {selectedPlace.goodToKnow.length > 0 ? (
+                  selectedPlace.goodToKnow.map((item) => (
+                    <li key={item}>✓ {item}</li>
+                  ))
+                ) : (
+                  <li>No extra notes yet.</li>
+                )}
               </ul>
             </section>
 
@@ -195,7 +220,7 @@ export default function Home() {
                 Location
               </p>
               <p className="mt-2 text-sm text-black/70">
-                {selectedRestaurant.address}
+                {selectedPlace.address}
               </p>
             </section>
           </aside>
